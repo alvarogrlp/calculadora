@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { myColors } from "./Colors";
 
 export const Styles = StyleSheet.create({
@@ -6,16 +6,16 @@ export const Styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     justifyContent: "flex-end",
-    alignItems: "center",
     paddingTop: 20,
     paddingHorizontal: 8,
     paddingBottom: 20,
+    ...(Platform.OS !== "web" && { alignItems: "center" }),
   },
   rowsContainer: {
     width: "100%",
     flexGrow: 1,
     justifyContent: "flex-end",
-    alignItems: "center",
+    ...(Platform.OS !== "web" && { alignItems: "center" }),
   },
   row: {
     flexDirection: "row",

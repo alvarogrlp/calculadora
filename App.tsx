@@ -1,5 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, StyleSheet, Switch, Text, View, TouchableOpacity, Platform, Pressable, Animated } from 'react-native';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  SafeAreaView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+  TouchableOpacity,
+  Platform,
+  Pressable,
+  Animated,
+  Easing,
+  useWindowDimensions,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { BlurView } from 'expo-blur';
 import { myColors } from './src/styles/Colors';
@@ -7,22 +19,37 @@ import { ThemeContext } from './src/context/ThemeContext';
 import MyKeyboard from './src/components/MyKeyboard';
 import SplitExpensesCalculator from './src/components/SplitExpensesCalculator';
 
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 type CalculatorMode = 'normal' | 'splitExpenses';
 
 export default function App() {
   const [theme, setTheme] = useState('light');
   const [calculatorMode, setCalculatorMode] = useState<CalculatorMode>('normal');
-  const [showModeMenu, setShowModeMenu] = useState(false);
-  
-  // Valores animados para el efecto de burbuja
+  const [isModeMenuVisible, setIsModeMenuVisible] = useState(false);
+  const [isMenuMounted, setIsMenuMounted] = useState(false);
+
+  // Valores animados para el efecto de burbuja y transiciones
   const bubbleScale = useRef(new Animated.Value(0)).current;
   const bubbleOpacity = useRef(new Animated.Value(0)).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const contentOpacity = useRef(new Animated.Value(1)).current;
+  const contentScale = useRef(new Animated.Value(1)).current;
+
+  const { width, height } = useWindowDimensions();
+  const isSmallScreen = width < 360;
+  const isTablet = width >= 768;
+  const isLandscape = width > height;
 
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    if (showModeMenu) {
-      // Animar la burbuja inflándose
+    if (isModeMenuVisible) {
+      if (!isMenuMounted) {
+        setIsMenuMounted(true);
+      }
+
       Animated.parallel([
         Animated.spring(bubbleScale, {
           toValue: 1,
@@ -33,29 +60,186 @@ export default function App() {
         Animated.timing(bubbleOpacity, {
           toValue: 1,
           duration: 200,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 180,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
       ]).start();
-    } else {
-      // Animar la burbuja desinflándose
+    } else if (isMenuMounted) {
       Animated.parallel([
         Animated.timing(bubbleScale, {
           toValue: 0,
-          duration: 150,
+          duration: 160,
+          easing: Easing.in(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(bubbleOpacity, {
           toValue: 0,
+          duration: 140,
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: 0,
           duration: 150,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(({ finished }) => {
+        if (finished) {
+          setIsMenuMounted(false);
+        }
+      });
     }
-  }, [showModeMenu]);
+  }, [isModeMenuVisible, isMenuMounted, bubbleScale, bubbleOpacity, overlayOpacity]);
+
+  const modeButtonScale = useRef(new Animated.Value(1)).current;
+
+  const animatePressIn = (value: Animated.Value) => {
+    Animated.spring(value, {
+      toValue: 0.94,
+      tension: 220,
+      friction: 12,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const animatePressOut = (value: Animated.Value) => {
+    Animated.spring(value, {
+      toValue: 1,
+      tension: 220,
+      friction: 14,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const overlayBackgroundColor = isDark ? 'rgba(5, 6, 10, 0.55)' : 'rgba(230, 235, 255, 0.45)';
+
+  const shellResponsiveStyle = useMemo(() => {
+    if (isTablet) {
+      return {
+        width: isLandscape ? '72%' : '80%',
+        maxWidth: 560,
+        padding: 26,
+        paddingTop: 34,
+        borderRadius: 50,
+      };
+    }
+
+    if (isSmallScreen) {
+      return {
+        padding: 14,
+        paddingTop: 20,
+        borderRadius: 34,
+      };
+    }
+
+    if (isLandscape) {
+      return {
+        width: '85%',
+      };
+    }
+
+    return {};
+  }, [isTablet, isSmallScreen, isLandscape]);
+
+  const headerResponsiveStyle = useMemo(
+    () => ({
+      paddingBottom: isSmallScreen ? 14 : 20,
+      marginBottom: isSmallScreen ? 4 : 8,
+    }),
+    [isSmallScreen],
+  );
+
+  const headerButtonResponsiveStyle = useMemo(
+    () => ({
+      paddingHorizontal: isTablet ? 24 : isSmallScreen ? 16 : 20,
+      paddingVertical: isTablet ? 12 : isSmallScreen ? 8 : 10,
+      minWidth: isTablet ? 120 : isSmallScreen ? 78 : 90,
+      borderRadius: isTablet ? 32 : isSmallScreen ? 24 : 28,
+    }),
+    [isSmallScreen, isTablet],
+  );
+
+  const toggleSwitchResponsiveStyle = useMemo(
+    () => ({
+      transform: [{ scale: isTablet ? 1 : isSmallScreen ? 0.78 : 0.85 }],
+    }),
+    [isSmallScreen, isTablet],
+  );
+
+  const modeMenuResponsiveStyle = useMemo(
+    () => ({
+      top: isTablet ? 84 : isSmallScreen ? 66 : 70,
+      left: isSmallScreen ? 16 : 26,
+      minWidth: isTablet ? 240 : 200,
+    }),
+    [isSmallScreen, isTablet],
+  );
+
+  const splitContentResponsiveStyle = useMemo(
+    () => ({
+      paddingHorizontal: isTablet ? 4 : 0,
+      paddingBottom: isSmallScreen ? 8 : 0,
+    }),
+    [isTablet, isSmallScreen],
+  );
+
+  const menuTranslateY = bubbleScale.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-12, 0],
+  });
+
+  const menuScale = bubbleScale.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.92, 1],
+  });
+
+  const toggleModeMenu = () => setIsModeMenuVisible((prev) => !prev);
+
+  const animateModeChange = (mode: CalculatorMode) => {
+    Animated.parallel([
+      Animated.timing(contentOpacity, {
+        toValue: 0,
+        duration: 120,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(contentScale, {
+        toValue: 0.96,
+        duration: 120,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setCalculatorMode(mode);
+
+      Animated.parallel([
+        Animated.timing(contentOpacity, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.spring(contentScale, {
+          toValue: 1,
+          tension: 60,
+          friction: 9,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  };
 
   const handleModeSelect = (mode: CalculatorMode) => {
-    setCalculatorMode(mode);
-    setShowModeMenu(false);
+    if (mode !== calculatorMode) {
+      animateModeChange(mode);
+    }
+
+    setIsModeMenuVisible(false);
   };
 
   return (
@@ -72,17 +256,23 @@ export default function App() {
           style={[
             styles.calculatorShell,
             isDark ? styles.calculatorShellDark : styles.calculatorShellLight,
+            shellResponsiveStyle,
           ]}
         >
-          {/* Header con botones simétricos */}
-          <View style={styles.headerInside}>
-            {/* Botón de Modo (izquierda) */}
-            <TouchableOpacity
+          {/* Header con botones simetricos */}
+          <View style={[styles.headerInside, headerResponsiveStyle]}>
+            {/* Boton de Modo (izquierda) */}
+            <AnimatedTouchableOpacity
+              activeOpacity={0.85}
               style={[
                 styles.headerButton,
                 isDark ? styles.headerButtonDark : styles.headerButtonLight,
+                headerButtonResponsiveStyle,
+                { transform: [{ scale: modeButtonScale }] },
               ]}
-              onPress={() => setShowModeMenu(!showModeMenu)}
+              onPress={toggleModeMenu}
+              onPressIn={() => animatePressIn(modeButtonScale)}
+              onPressOut={() => animatePressOut(modeButtonScale)}
             >
               <Text
                 style={[
@@ -92,14 +282,15 @@ export default function App() {
               >
                 Modo
               </Text>
-            </TouchableOpacity>
+            </AnimatedTouchableOpacity>
 
-            {/* Botón de Tema (derecha) */}
+            {/* Boton de Tema (derecha) */}
             <View
               style={[
                 styles.headerButton,
                 styles.themeButton,
                 isDark ? styles.headerButtonDark : styles.headerButtonLight,
+                headerButtonResponsiveStyle,
               ]}
             >
               <Switch
@@ -111,40 +302,37 @@ export default function App() {
                   true: 'rgba(255, 149, 0, 0.55)',
                 }}
                 ios_backgroundColor="rgba(40, 42, 55, 0.35)"
-                style={styles.toggleSwitch}
+                style={[styles.toggleSwitch, toggleSwitchResponsiveStyle]}
               />
             </View>
           </View>
 
-          {/* Overlay para cerrar el menú al hacer clic fuera */}
-          {showModeMenu && (
-            <Pressable 
-              style={styles.menuOverlay}
-              onPress={() => setShowModeMenu(false)}
+          {/* Overlay para cerrar el menu al hacer clic fuera */}
+          {isMenuMounted && (
+            <AnimatedPressable
+              style={[
+                styles.menuOverlay,
+                { opacity: overlayOpacity, backgroundColor: overlayBackgroundColor },
+              ]}
+              onPress={() => setIsModeMenuVisible(false)}
             />
           )}
 
-          {/* Menú desplegable de Modo con animación de burbuja */}
-          {showModeMenu && (
+          {/* Menu desplegable de Modo con animacion de burbuja */}
+          {isMenuMounted && (
             <BlurView
               intensity={Platform.OS === 'ios' ? 9 : 9}
               tint={isDark ? 'dark' : 'light'}
               style={[
                 styles.modeMenu,
                 isDark ? styles.modeMenuDark : styles.modeMenuLight,
+                modeMenuResponsiveStyle,
               ]}
             >
               <Animated.View
                 style={{
                   opacity: bubbleOpacity,
-                  transform: [
-                    { 
-                      scaleY: bubbleScale.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.5, 1],
-                      })
-                    }
-                  ],
+                  transform: [{ translateY: menuTranslateY }, { scale: menuScale }],
                 }}
               >
                 <TouchableOpacity
@@ -188,14 +376,21 @@ export default function App() {
             </BlurView>
           )}
 
-          {/* Contenido dinámico según el modo */}
-          {calculatorMode === 'normal' ? (
-            <MyKeyboard />
-          ) : (
-            <View style={styles.splitExpensesContent}>
-              <SplitExpensesCalculator />
-            </View>
-          )}
+          {/* Contenido dinamico segun el modo */}
+          <Animated.View
+            style={[
+              styles.modeContentWrapper,
+              { opacity: contentOpacity, transform: [{ scale: contentScale }] },
+            ]}
+          >
+            {calculatorMode === 'normal' ? (
+              <MyKeyboard />
+            ) : (
+              <View style={[styles.splitExpensesContent, splitContentResponsiveStyle]}>
+                <SplitExpensesCalculator />
+              </View>
+            )}
+          </Animated.View>
         </View>
       </SafeAreaView>
     </ThemeContext.Provider>
@@ -321,7 +516,7 @@ const styles = StyleSheet.create({
     minWidth: 70,
   },
   toggleSwitch: {
-    transform: [{ scale: 0.85 }],
+    alignSelf: 'center',
   },
   menuOverlay: {
     position: 'absolute',
@@ -396,4 +591,9 @@ const styles = StyleSheet.create({
   splitExpensesContent: {
     flex: 1,
   },
+  modeContentWrapper: {
+    flex: 1,
+    width: '100%',
+  },
 });
+

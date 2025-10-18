@@ -1,4 +1,4 @@
-import { useContext, useMemo, useRef } from "react";
+import { useContext, useMemo, useRef, useEffect } from "react";
 import { TouchableOpacity, Text, Animated, useWindowDimensions } from "react-native";
 import { ThemeContext } from "../context/ThemeContext";
 import { Styles } from "../styles/GlobalStyles";
@@ -19,6 +19,25 @@ export default function Button({ title, onPress, isAccent, isUtility, span }: Bu
   const isSmallScreen = width < 360;
   const isTablet = width >= 768;
   const scale = useRef(new Animated.Value(1)).current;
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Subtle shimmer animation for glass effect
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [shimmer]);
 
   const buttonSizeStyle = useMemo(
     () => ({
@@ -38,9 +57,9 @@ export default function Button({ title, onPress, isAccent, isUtility, span }: Bu
 
   const animatePressIn = () => {
     Animated.spring(scale, {
-      toValue: 0.94,
-      tension: 220,
-      friction: 14,
+      toValue: 0.92,
+      tension: 250,
+      friction: 15,
       useNativeDriver: true,
     }).start();
   };
@@ -48,8 +67,8 @@ export default function Button({ title, onPress, isAccent, isUtility, span }: Bu
   const animatePressOut = () => {
     Animated.spring(scale, {
       toValue: 1,
-      tension: 220,
-      friction: 12,
+      tension: 250,
+      friction: 13,
       useNativeDriver: true,
     }).start();
   };
@@ -73,7 +92,9 @@ export default function Button({ title, onPress, isAccent, isUtility, span }: Bu
     isAccent
       ? Styles.buttonTextAccent
       : isUtility
-      ? Styles.buttonTextUtility
+      ? theme === "dark"
+        ? Styles.buttonTextUtilityDark
+        : Styles.buttonTextUtility
       : theme === "dark"
       ? Styles.buttonTextPrimaryDark
       : Styles.buttonTextPrimaryLight,

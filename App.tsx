@@ -97,6 +97,7 @@ export default function App() {
   }, [isModeMenuVisible, isMenuMounted, bubbleScale, bubbleOpacity, overlayOpacity]);
 
   const modeButtonScale = useRef(new Animated.Value(1)).current;
+  const themeButtonScale = useRef(new Animated.Value(1)).current;
 
   const animatePressIn = (value: Animated.Value) => {
     Animated.spring(value, {
@@ -285,26 +286,27 @@ export default function App() {
             </AnimatedTouchableOpacity>
 
             {/* Boton de Tema (derecha) */}
-            <View
+            <AnimatedTouchableOpacity
+              activeOpacity={0.85}
               style={[
                 styles.headerButton,
-                styles.themeButton,
                 isDark ? styles.headerButtonDark : styles.headerButtonLight,
                 headerButtonResponsiveStyle,
+                { transform: [{ scale: themeButtonScale }] },
               ]}
+              onPress={() => setTheme(isDark ? 'light' : 'dark')}
+              onPressIn={() => animatePressIn(themeButtonScale)}
+              onPressOut={() => animatePressOut(themeButtonScale)}
             >
-              <Switch
-                value={isDark}
-                onValueChange={() => setTheme(isDark ? 'light' : 'dark')}
-                thumbColor={isDark ? myColors.white : myColors.black}
-                trackColor={{
-                  false: 'rgba(40, 42, 55, 0.35)',
-                  true: 'rgba(255, 149, 0, 0.55)',
-                }}
-                ios_backgroundColor="rgba(40, 42, 55, 0.35)"
-                style={[styles.toggleSwitch, toggleSwitchResponsiveStyle]}
-              />
-            </View>
+              <Text
+                style={[
+                  styles.headerButtonText,
+                  isDark ? styles.headerButtonTextDark : styles.headerButtonTextLight,
+                ]}
+              >
+                {isDark ? 'Oscuro' : 'Claro'}
+              </Text>
+            </AnimatedTouchableOpacity>
           </View>
 
           {/* Overlay para cerrar el menu al hacer clic fuera */}
@@ -402,7 +404,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingTop: 0,
+    paddingTop: Platform.OS === 'android' ? 55 : 0,
+    paddingBottom: Platform.OS === 'android' ? 25 : 0,
     position: 'relative',
   },
   containerLight: {
@@ -422,45 +425,46 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 80,
     left: 0,
-    width: 260,
-    height: 260,
-    borderRadius: 180,
-    backgroundColor: 'rgba(84, 102, 255, 0.28)',
-    opacity: 0.85,
+    width: 280,
+    height: 280,
+    borderRadius: 200,
+    backgroundColor: 'rgba(100, 120, 255, 0.35)',
+    opacity: 0.75,
   },
   accentGlow: {
     position: 'absolute',
-    right: 20,
-    top: 0,
+    top: 20,
+    right: 10,
     width: 220,
     height: 220,
-    borderRadius: 160,
-    backgroundColor: 'rgba(255, 149, 0, 0.22)',
-    opacity: 0.75,
+    borderRadius: 180,
+    backgroundColor: 'rgba(255, 149, 0, 0.3)',
+    opacity: 0.7,
   },
   calculatorShell: {
     flex: 1,
     width: '95%',
     maxWidth: 420,
-    borderRadius: 40,
-    padding: 18,
-    paddingTop: 24,
-    borderWidth: 1,
-    shadowOpacity: 0.22,
-    shadowRadius: 35,
-    shadowOffset: { width: 0, height: 25 },
-    elevation: 12,
+    borderRadius: 44,
+    padding: 20,
+    paddingTop: 26,
+    borderWidth: 1.5,
+    shadowOpacity: 0.3,
+    shadowRadius: 40,
+    shadowOffset: { width: 0, height: 30 },
+    elevation: 15,
     marginHorizontal: 10,
+    overflow: 'hidden',
   },
   calculatorShellLight: {
-    backgroundColor: 'rgba(255, 255, 255, 0.48)',
-    borderColor: 'rgba(160, 165, 180, 0.35)',
-    shadowColor: 'rgba(72, 92, 200, 0.25)',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(200, 210, 230, 0.45)',
+    shadowColor: 'rgba(100, 120, 200, 0.3)',
   },
   calculatorShellDark: {
-    backgroundColor: 'rgba(19, 20, 28, 0.82)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    shadowColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(25, 27, 38, 0.65)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    shadowColor: 'rgba(0, 0, 0, 0.6)',
   },
   headerInside: {
     flexDirection: 'row',
@@ -474,30 +478,31 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 28,
-    borderWidth: 1,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1.5,
     minWidth: 90,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   headerButtonLight: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-    borderColor: 'rgba(160, 165, 180, 0.4)',
-    shadowColor: 'rgba(118, 132, 220, 0.25)',
-    shadowOpacity: 0.3,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    borderColor: 'rgba(200, 210, 230, 0.5)',
+    shadowColor: 'rgba(100, 120, 200, 0.3)',
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 15 },
+    elevation: 8,
+  },
+  headerButtonDark: {
+    backgroundColor: 'rgba(50, 52, 65, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: 'rgba(0, 0, 0, 0.5)',
+    shadowOpacity: 0.5,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 12 },
     elevation: 6,
-  },
-  headerButtonDark: {
-    backgroundColor: 'rgba(25, 27, 38, 0.75)',
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    shadowColor: 'rgba(0, 0, 0, 0.35)',
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 5,
   },
   headerButtonText: {
     fontSize: 15,
@@ -544,22 +549,22 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   modeMenuLight: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderColor: 'rgba(140, 145, 160, 0.3)',
-    shadowColor: 'rgba(118, 132, 220, 0.3)',
-    shadowOpacity: 0.35,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 15 },
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(180, 190, 220, 0.4)',
+    shadowColor: 'rgba(100, 120, 200, 0.35)',
+    shadowOpacity: 0.4,
+    shadowRadius: 25,
+    shadowOffset: { width: 0, height: 16 },
     elevation: 8,
   },
   modeMenuDark: {
-    backgroundColor: 'rgba(25, 27, 38, 0.05)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    shadowColor: 'rgba(0, 0, 0, 0.45)',
-    shadowOpacity: 0.45,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 7,
+    backgroundColor: 'rgba(30, 32, 45, 0.08)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    shadowColor: 'rgba(0, 0, 0, 0.6)',
+    shadowOpacity: 0.5,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 9,
   },
   modeMenuItem: {
     paddingHorizontal: 18,
